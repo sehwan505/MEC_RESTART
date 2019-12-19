@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, render_to_response, get_object_or_404
-from MECboard.models import Board, Comment, Profile, Finished_board, Finished_comment
+from MECboard.models import Board, Comment, Profile
 import os
 import math
 from django.contrib.auth.decorators import login_required
@@ -19,41 +19,41 @@ from sklearn.metrics import accuracy_score
 UPLOAD_DIR = "C:/Users/sehwa/PycharmProjects/MEC/MECboard/media/images"
 login_failure = False
 
+
 @csrf_exempt
 def list(request):
-    
     try:
-        search_option=request.POST["search_option"]
+        search_option = request.POST["search_option"]
     except:
-        search_option="writer"
+        search_option = "writer"
     try:
-        search=request.POST["search"]
+        search = request.POST["search"]
     except:
-        search=""
-        
-    if search_option=="all":
-        boardCount=Board.objects.filter(Q(writer__contains=search)
-        |Q(title__contains=search)|Q(content__contains=search)).count()
-    elif search_option=="writer":
-        boardCount=Board.objects.filter(Q(writer__contains=search)).count()
-    elif search_option=="title":
-        boardCount=Board.objects.filter(Q(title__contains=search)).count()
-    elif search_option=="content":
-        boardCount=Board.objects.filter(Q(content__contains=search)).count()
-       
+        search = ""
+
+    if search_option == "all":
+        boardCount = Board.objects.filter(Q(writer__contains=search)
+                                          | Q(title__contains=search) | Q(content__contains=search), Q(is_finished=False)).count()
+    elif search_option == "writer":
+        boardCount = Board.objects.filter(Q(writer__contains=search), Q(is_finished=False)).count()
+    elif search_option == "title":
+        boardCount = Board.objects.filter(Q(title__contains=search), Q(is_finished=False)).count()
+    elif search_option == "content":
+        boardCount = Board.objects.filter(Q(content__contains=search), Q(is_finished=False)).count()
+
     try:
-        start=int(request.GET["start"])
+        start = int(request.GET["start"])
     except:
-        start=0
+        start = 0
     page_size = 10
     page_list_size = 10
     end = start + page_size
     total_page = math.ceil(boardCount / page_size)
-    current_page=math.ceil( (start+1) / page_size )
-    start_page = math.floor( (current_page - 1) / page_list_size)\
-        * page_list_size + 1
+    current_page = math.ceil((start + 1) / page_size)
+    start_page = math.floor((current_page - 1) / page_list_size) \
+                 * page_list_size + 1
     end_page = start_page + page_list_size - 1
-    
+
     if total_page < end_page:
         end_page = total_page
     if start_page >= page_list_size:
@@ -64,58 +64,61 @@ def list(request):
         next_list = end_page * page_size
     else:
         next_list = 0
-    
-    if search_option=="all":
-        boardList=Board.objects.filter(Q(writer__contains=search)
-        |Q(title__contains=search)|Q(content__contains=search)).order_by("-idx")[start:end]
-    elif search_option=="writer":
-        boardList=Board.objects.filter(Q(writer__contains=search)).order_by("-idx")[start:end]
-    elif search_option=="title":
-        boardList=Board.objects.filter(Q(title__contains=search)).order_by("-idx")[start:end]
-    elif search_option=="content":
-        boardList=Board.objects.filter(Q(content__contains=search)).order_by("-idx")[start:end]
-        
+
+    if search_option == "all":
+        boardList = Board.objects.filter(Q(writer__contains=search)
+                                         | Q(title__contains=search) | Q(content__contains=search), Q(is_finished=False)).order_by("-idx")[
+                    start:end]
+    elif search_option == "writer":
+        boardList = Board.objects.filter(Q(writer__contains=search), Q(is_finished=False)).order_by("-idx")[start:end]
+    elif search_option == "title":
+        boardList = Board.objects.filter(Q(title__contains=search), Q(is_finished=False)).order_by("-idx")[start:end]
+    elif search_option == "content":
+        boardList = Board.objects.filter(Q(content__contains=search), Q(is_finished=False)).order_by("-idx")[start:end]
+
     links = []
-    for i in range(start_page, end_page+1):
-        page = (i-1) * page_size
-        links.append("<a href='?start="+str(page)+"'>"+str(i)+"</a>")
-        
+    for i in range(start_page, end_page + 1):
+        page = (i - 1) * page_size
+        links.append("<a href='?start=" + str(page) + "'>" + str(i) + "</a>")
+
     if not request.user.is_authenticated:
         username = request.user
         is_authenticated = request.user.is_authenticated
     else:
         username = request.user.username
         is_authenticated = request.user.is_authenticated
-    
-    return render_to_response("list.html", 
-                    {"boardList":boardList, "boardCount":boardCount,
-                     "search_option":search_option, "search":search,
-                     "range":range(start_page-1, end_page),
-                     "start_page":start_page, "end_page":end_page,
-                     "page_list_size":page_list_size, "total_page":total_page,
-                     "prev_list":prev_list, "next_list":next_list,
-                     "links":links, "username":username, "is_authenticated":is_authenticated,})
+
+    return render_to_response("list.html",
+                              {"boardList": boardList, "boardCount": boardCount,
+                               "search_option": search_option, "search": search,
+                               "range": range(start_page - 1, end_page),
+                               "start_page": start_page, "end_page": end_page,
+                               "page_list_size": page_list_size, "total_page": total_page,
+                               "prev_list": prev_list, "next_list": next_list,
+                               "links": links, "username": username, "is_authenticated": is_authenticated, })
+
 
 def write(request):
     username = request.user
     is_authenticated = True
-    return render_to_response("write.html", {"username":username, "is_authenticated":is_authenticated})
+    return render_to_response("write.html", {"username": username, "is_authenticated": is_authenticated})
+
 
 @csrf_exempt
 def insert(request):
-    fname=""
-    fsize=0
+    fname = ""
+    fsize = 0
 
     if "file" in request.FILES:
         file = request.FILES["file"]
         print(file)
         fname = file._name
-        print(UPLOAD_DIR+fname)
+        print(UPLOAD_DIR + fname)
         with open("%s%s" % (UPLOAD_DIR, fname), "wb") as fp:
             for chunk in file.chunks():
                 fp.write(chunk)
-            
-        fsize = os.path.getsize(UPLOAD_DIR+fname)
+
+        fsize = os.path.getsize(UPLOAD_DIR + fname)
 
     if "thumbnail" in request.FILES:
         file = request.FILES["thumbnail"]
@@ -143,25 +146,26 @@ def insert(request):
 
     username = request.POST["username"]
     is_authenticated = request.POST["is_authenticated"]
-    return HttpResponseRedirect("detail?idx="+id+"&username="+username+"&is_authenticated="+is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
 
 
 def download(request):
     id = request.GET["idx"]
     dto = Board.objects.get(idx=id)
-    path = UPLOAD_DIR+dto.filename
+    path = UPLOAD_DIR + dto.filename
     filename = os.path.basename(path)
-    filename=urlquote(filename)
+    filename = urlquote(filename)
     with open(path, "rb") as file:
         response = HttpResponse(file.read(),
-                content_type="application/octet-stream")
-        response["Content-Disposition"]=\
-        "attachment;filename*=UTF-8''{0}".format(filename)
+                                content_type="application/octet-stream")
+        response["Content-Disposition"] = \
+            "attachment;filename*=UTF-8''{0}".format(filename)
         dto.down_up()
         dto.save()
     return response
-  
-@csrf_exempt        
+
+
+@csrf_exempt
 def detail(request):
     id = request.GET["idx"]
     username = request.GET["username"]
@@ -171,34 +175,37 @@ def detail(request):
     dto = Board.objects.get(idx=id)
     dto.hit_up()
     dto.save()
-    filesize="%.2f" % (dto.filesize / 1024)
-    
+    filesize = "%.2f" % (dto.filesize / 1024)
     try:
-        search_option=request.POST["array_option"]
+        search_option = request.POST["array_option"]
     except:
-        search_option="written"
-    if search_option=="written":
-        commentList=Comment.objects.filter(board_idx=id).order_by("idx")
-    elif search_option=="rating":
-        commentList=Comment.objects.filter(board_idx=id).order_by("-rating")
-        
-    return render_to_response("detail.html", 
-        {"dto":dto, "filesize":filesize, "commentList":commentList, "username":username,
-          "is_authenticated":is_authenticated, "is_superuser":is_superuser, "search_option":search_option, "profile":profile})
+        search_option = "written"
+    if search_option == "written":
+        commentList = Comment.objects.filter(board_idx=id).order_by("idx")
+    elif search_option == "rating":
+        commentList = Comment.objects.filter(board_idx=id).order_by("-rating")
 
-@csrf_exempt    
+    return render_to_response("detail.html",
+                              {"dto": dto, "filesize": filesize, "commentList": commentList, "username": username,
+                               "is_authenticated": is_authenticated, "is_superuser": is_superuser,
+                               "search_option": search_option, "profile": profile})
+
+
+@csrf_exempt
 def update_page(request):
     id = request.POST['idx']
     dto = Board.objects.get(idx=id)
-    filesize="%.2f" % (dto.filesize / 1024)
+    filesize = "%.2f" % (dto.filesize / 1024)
     username = request.user
     is_authenticated = True
-    return render_to_response("update_page.html", {"username":username, "dto":dto, "filesize":filesize, "is_authenticated":is_authenticated})
+    return render_to_response("update_page.html", {"username": username, "dto": dto, "filesize": filesize,
+                                                   "is_authenticated": is_authenticated})
+
 
 @csrf_exempt
 def update(request):
     id = request.POST["idx"]
-    dto_src=Board.objects.get(idx=id)
+    dto_src = Board.objects.get(idx=id)
     username = request.POST["username"]
     is_authenticated = request.POST["is_authenticated"]
     fname = dto_src.filename
@@ -210,14 +217,15 @@ def update(request):
         for chunk in file.chunks():
             fp.write(chunk)
         fp.close()
-        fsize = os.path.getsize(UPLOAD_DIR+fname)
-        
+        fsize = os.path.getsize(UPLOAD_DIR + fname)
+
     dto_new = Board(idx=id, writer=request.POST["writer"],
-        title=request.POST["title"], content=request.POST["content"],
-        filename=fname, filesize=fsize, hit=request.POST["hit"],
-        rating=request.POST["rating"], ratings_up=request.POST["ratings_up"], ratings_down=request.POST["ratings_down"])
+                    title=request.POST["title"], content=request.POST["content"],
+                    filename=fname, filesize=fsize, hit=request.POST["hit"],
+                    rating=request.POST["rating"], ratings_up=request.POST["ratings_up"],
+                    ratings_down=request.POST["ratings_down"])
     dto_new.save()
-    return HttpResponseRedirect("detail?idx="+id+"&username="+username+"&is_authenticated="+is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
 
 
 @csrf_exempt
@@ -226,32 +234,35 @@ def delete(request):
     Board.objects.get(idx=id).delete()
     return redirect("/")
 
+
 @csrf_exempt
 def reply_insert(request):
     id = request.POST["idx"]
     username = request.POST["username"]
     is_authenticated = request.POST["is_authenticated"]
-    vote=request.POST["vote"]
+    vote = request.POST["vote"]
     dto_board = Board.objects.get(idx=id)
-    fname=""
-    fsize=0
+    fname = ""
+    fsize = 0
 
     if "file" in request.FILES:
         file = request.FILES["file"]
         print(file)
         fname = file._name
-        
-        print(UPLOAD_DIR+fname)
-        with open("%s%s" %(UPLOAD_DIR,fname), "wb") as fp:
+
+        print(UPLOAD_DIR + fname)
+        with open("%s%s" % (UPLOAD_DIR, fname), "wb") as fp:
             for chunk in file.chunks():
                 fp.write(chunk)
-            
-        fsize = os.path.getsize(UPLOAD_DIR+fname)
+
+        fsize = os.path.getsize(UPLOAD_DIR + fname)
         dto = Comment(board_idx=id, writer=request.POST["writer"],
-                    content=request.POST["content"], vote=request.POST["vote"],filename = fname, filesize = fsize, image=request.FILES["file"], evidence=request.POST["evidence"])
+                      content=request.POST["content"], vote=request.POST["vote"], filename=fname, filesize=fsize,
+                      image=request.FILES["file"], evidence=request.POST["evidence"])
     else:
         dto = Comment(board_idx=id, writer=request.POST["writer"],
-                      content=request.POST["content"], vote=request.POST["vote"], filename=fname, filesize=fsize, evidence=request.POST["evidence"])
+                      content=request.POST["content"], vote=request.POST["vote"], filename=fname, filesize=fsize,
+                      evidence=request.POST["evidence"])
     dto.save()
 
     if vote == '1' or vote == '2':
@@ -261,7 +272,8 @@ def reply_insert(request):
     dto_board.rating = dto_board.ratings_up - dto_board.ratings_down
     dto_board.save()
 
-    return HttpResponseRedirect("detail?idx="+id+"&username="+username+"&is_authenticated="+is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+
 
 @csrf_exempt
 @login_required
@@ -278,7 +290,6 @@ def reply_rating(request):
     profile = Profile.objects.get(user=user)
     check_like_post = profile.user_likelist.filter(idx=post.idx)
 
-
     if check_like_post.exists():
         profile.user_likelist.remove(post)
         cdto.rating -= 1
@@ -288,8 +299,8 @@ def reply_rating(request):
         profile.user_likelist.add(post)
         cdto.rating += 1
         cdto.save()
-        if (cdto.evidence == 1):
-            evidence = Comment.objects.get(evidence=1, idx=cid)
+        if (cdto.evidence == True):
+            evidence = Comment.objects.get(evidence=True, idx=cid)
             if evidence.rating == 1:
                 if evidence.vote == 1:
                     dto.win_score += 2;
@@ -303,12 +314,13 @@ def reply_rating(request):
 
     if dto.win_score > 0:
         print("찬성 승리")
-        game_finish(request)
+        dto.is_finished = True
+        dto.save()
     elif dto.win_score < 0:
         print("반대 승리")
-        game_finish(request)
-
-    #예전꺼
+        dto.is_finished = True
+        dto.save()
+    # 예전꺼
     # if rate == '1':
     #     cdto.rate_up()
     # else:
@@ -316,7 +328,8 @@ def reply_rating(request):
     # cdto.rating = cdto.ratings_up - cdto.ratings_down
     # cdto.save()
 
-    return HttpResponseRedirect("detail?idx="+id+"&username="+username+"&is_authenticated="+is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+
 
 @csrf_exempt
 def reply_update(request):
@@ -324,7 +337,7 @@ def reply_update(request):
     id = request.POST["idx"]
     username = request.POST["username"]
     is_authenticated = request.POST["is_authenticated"]
-    dto_src=Comment.objects.get(idx=cid)
+    dto_src = Comment.objects.get(idx=cid)
     fname = dto_src.filename
     fsize = dto_src.filesize
     if "file" in request.FILES:
@@ -334,12 +347,14 @@ def reply_update(request):
         for chunk in file.chunks():
             fp.write(chunk)
         fp.close()
-        fsize = os.path.getsize(UPLOAD_DIR+fname)
+        fsize = os.path.getsize(UPLOAD_DIR + fname)
     dto_new = Comment(idx=cid, board_idx=id, writer=request.POST["writer"], content=request.POST["content"],
-        rating=request.POST["rating"], ratings_up=request.POST["ratings_up"], ratings_down=request.POST["ratings_down"],
-        filename=fname, filesize=fsize, vote=request.POST["vote"],)
+                      rating=request.POST["rating"], ratings_up=request.POST["ratings_up"],
+                      ratings_down=request.POST["ratings_down"],
+                      filename=fname, filesize=fsize, vote=request.POST["vote"], )
     dto_new.save()
-    return HttpResponseRedirect("detail?idx="+id+"&username="+username+"&is_authenticated="+is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+
 
 @csrf_exempt
 def reply_delete(request):
@@ -357,17 +372,21 @@ def reply_delete(request):
         dto.rating += 1
     dto.save()
     cdto.delete()
-    return HttpResponseRedirect("detail?idx="+id+"&username="+username+"&is_authenticated="+is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
 
-@csrf_exempt    
+
+@csrf_exempt
 def reply_update_page(request):
     id = request.GET['cid']
     dto = Comment.objects.get(idx=id)
     username = request.GET["username"]
     is_authenticated = request.GET["is_authenticated"]
-    filesize="%.2f" % (dto.filesize / 1024)
+    filesize = "%.2f" % (dto.filesize / 1024)
 
-    return render_to_response("reply_update_page.html", {"username":username, "dto":dto, "filesize":filesize, "is_authenticated":is_authenticated})
+    return render_to_response("reply_update_page.html", {"username": username, "dto": dto, "filesize": filesize,
+                                                         "is_authenticated": is_authenticated})
+
+
 @csrf_exempt
 def evidence_insert(request):
     id = request.GET["idx"]
@@ -393,7 +412,7 @@ def evidence_insert(request):
     return render_to_response("evidence_insert.html",
                               {"dto": dto, "filesize": filesize, "commentList": commentList, "username": username,
                                "is_authenticated": is_authenticated, "is_superuser": is_superuser,
-                               "search_option": search_option, "profile":profile})
+                               "search_option": search_option, "profile": profile})
 
 
 def join(request):
@@ -404,15 +423,17 @@ def join(request):
             django_login(request, new_user)
             return redirect("/")
         else:
-            return render_to_response("index.html", 
-                                      {"msg":"failed to sign up..."})
+            return render_to_response("index.html",
+                                      {"msg": "failed to sign up..."})
     else:
         form = UserForm()
-    return render(request, "join.html", {"form":form})
+    return render(request, "join.html", {"form": form})
+
 
 def logout(request):
     django_logout(request)
     return redirect("/")
+
 
 def login_check(request):
     if request.method == "POST":
@@ -424,10 +445,11 @@ def login_check(request):
             django_login(request, user)
             return redirect("/")
         else:
-            return render(request, "login.html", {"form":form, "msg":"failed to login..."})
+            return render(request, "login.html", {"form": form, "msg": "failed to login..."})
     else:
         form = LoginForm()
-    return render(request, "login.html", {"form":form, "msg":"no error"})
+    return render(request, "login.html", {"form": form, "msg": "no error"})
+
 
 def muchin_learning(request):
     vec = TfidfVectorizer(min_df=2, tokenizer=None, norm='l2')
@@ -450,6 +472,8 @@ def muchin_learning(request):
     x_test = vec.transform(x_test)
     rf.fit(x_train, y_train)
     pred = rf.predict(x_test)
+
+
 #
 # class SocialAccountAdapter(DefaultSocialAccountAdapter):
 #     def save_user(self, request, sociallogin, form=None):
@@ -470,8 +494,10 @@ def muchin_learning(request):
 def profile(request):
     profile = Profile.objects.get(user=request.user)
     user_commentList = Comment.objects.filter(writer=request.user)
-    likeList=Comment.objects.all()
-    return render_to_response("profile.html", {"profile":profile, "user_commentList":user_commentList, "likeList":likeList})
+    likeList = Comment.objects.all()
+    return render_to_response("profile.html",
+                              {"profile": profile, "user_commentList": user_commentList, "likeList": likeList})
+
 
 @csrf_exempt
 def profile_update(request):
@@ -484,32 +510,14 @@ def profile_update(request):
         profile.introduction = profile_form.cleaned_data['introduction']
         profile.profile_photo = profile_form.cleaned_data['profile_photo']
         profile.save()
-        return redirect('/profile', {"profile":profile, "user_commentList":user_commentList})
+        return redirect('/profile', {"profile": profile, "user_commentList": user_commentList})
     else:
         profile_form = ProfileForm(instance=profile)
     return render(request, 'profile_update.html', {
         'profile_form': profile_form
     })
 
-def game_finish(request):
-    id = request.GET["idx"]
-    dto = Board.objects.get(idx=id)
-    cdto = Comment.objects.filter(board_idx=id)
-
-    finished_board = Finished_board(idx=dto.idx, title=dto.title ,writer= dto.writer ,content=dto.content, image_thumbnail=dto.image_thumbnail)
-    finished_board.save()
-
-    for c in cdto:
-        finished_comment = Finished_comment(idx=c.idx, board_idx=dto.idx, content=c.content, image=c.image,
-                                            post_date=c.post_date,
-                                            vote=c.vote, rating=c.rating, writer=c.writer)
-        finished_comment.save()
-
-    dto.delete()
-    cdto.delete()
-
-    finished_dic(request)
-
+@csrf_exempt
 def finished_dic(request):
     try:
         search_option = request.POST["search_option"]
@@ -522,13 +530,13 @@ def finished_dic(request):
 
     if search_option == "all":
         boardCount = Board.objects.filter(Q(writer__contains=search)
-                                          | Q(title__contains=search) | Q(content__contains=search)).count()
+                                          | Q(title__contains=search) | Q(content__contains=search), Q(is_finished=True)).count()
     elif search_option == "writer":
-        boardCount = Board.objects.filter(Q(writer__contains=search)).count()
+        boardCount = Board.objects.filter(Q(writer__contains=search), Q(is_finished=True)).count()
     elif search_option == "title":
-        boardCount = Board.objects.filter(Q(title__contains=search)).count()
+        boardCount = Board.objects.filter(Q(title__contains=search), Q(is_finished=True)).count()
     elif search_option == "content":
-        boardCount = Board.objects.filter(Q(content__contains=search)).count()
+        boardCount = Board.objects.filter(Q(content__contains=search), Q(is_finished=True)).count()
 
     try:
         start = int(request.GET["start"])
@@ -555,34 +563,34 @@ def finished_dic(request):
         next_list = 0
 
     if search_option == "all":
-       finished_boardList = Finished_board.objects.filter(Q(writer__contains=search)
-                                         | Q(title__contains=search) | Q(content__contains=search)).order_by("-idx")[
+        boardList = Board.objects.filter(Q(writer__contains=search)
+                                         | Q(title__contains=search) | Q(content__contains=search), Q(is_finished=True)).order_by("-idx")[
                     start:end]
     elif search_option == "writer":
-        finished_boardList = Finished_board.objects.filter(Q(writer__contains=search)).order_by("-idx")[start:end]
+        boardList = Board.objects.filter(Q(writer__contains=search), Q(is_finished=True)).order_by("-idx")[start:end]
     elif search_option == "title":
-        finished_boardList = Finished_board.objects.filter(Q(title__contains=search)).order_by("-idx")[start:end]
+        boardList = Board.objects.filter(Q(title__contains=search), Q(is_finished=True)).order_by("-idx")[start:end]
     elif search_option == "content":
-        finished_boardList = Finished_board.objects.filter(Q(content__contains=search)).order_by("-idx")[start:end]
+        boardList = Board.objects.filter(Q(content__contains=search), Q(is_finished=True)).order_by("-idx")[start:end]
 
     links = []
     for i in range(start_page, end_page + 1):
         page = (i - 1) * page_size
         links.append("<a href='?start=" + str(page) + "'>" + str(i) + "</a>")
 
+    if not request.user.is_authenticated:
+        username = request.user
+        is_authenticated = request.user.is_authenticated
+    else:
         username = request.user.username
         is_authenticated = request.user.is_authenticated
 
     return render_to_response("finished_dic.html",
-                              {"finished_boardList": finished_boardList, "boardCount": boardCount,
+                              {"boardList": boardList, "boardCount": boardCount,
                                "search_option": search_option, "search": search,
                                "range": range(start_page - 1, end_page),
                                "start_page": start_page, "end_page": end_page,
                                "page_list_size": page_list_size, "total_page": total_page,
                                "prev_list": prev_list, "next_list": next_list,
-                               "links": links, "username": username, "is_authenticated": is_authenticated})
-
-
-
-
+                               "links": links, "username": username, "is_authenticated": is_authenticated, })
 

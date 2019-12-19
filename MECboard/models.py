@@ -32,6 +32,7 @@ class Board(models.Model):
     ratings_down = models.IntegerField(default=0)
     rating = models.IntegerField(default=0)
     win_score = models.IntegerField(default=0)
+    is_finished = models.BooleanField(default=False)
     image_thumbnail = ProcessedImageField(
             upload_to='media/thumbnail',
             processors=[Thumbnail(100, 100)],
@@ -63,31 +64,6 @@ class Comment(models.Model):
     evidence = models.BooleanField(default=False, null=False)
     image = models.ImageField(default="media/default.jpg", upload_to="media/images")
 
-
-class Finished_board(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
-    title = models.CharField(null=True, max_length=50, )
-    writer = models.CharField(null=True, max_length=50)
-    idx = models.IntegerField(null=False, primary_key=True)
-    content = models.TextField(null=True)
-    image_thumbnail = ProcessedImageField(
-        upload_to='media/thumbnail',
-        processors=[Thumbnail(100, 100)],
-        format='JPEG',
-        options={'quality': 60},
-        null=True)
-
-
-class Finished_comment(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
-    idx = models.IntegerField(null=False)
-    board_idx = models.IntegerField(null=False)
-    writer = models.CharField(null=False, max_length=50)
-    content = models.TextField(null=False)
-    post_date = models.DateTimeField(default=datetime.now, blank=True)
-    vote = models.IntegerField(null=False)
-    rating = models.IntegerField(default=0)
-    image = models.ImageField(default="media/default.jpg", upload_to="media/images")
 
 class UserForm(forms.ModelForm):
     class Meta:
