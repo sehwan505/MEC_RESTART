@@ -7,6 +7,17 @@ from django import forms
 from MEC import settings
 from imagekit.models import ImageSpecField,ProcessedImageField
 from imagekit.processors import Thumbnail
+from django.db.models.signals import post_save
+
+class Profile(models.Model):
+    user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,)
+    introduction = models.TextField(blank=True)
+    nickname = models.CharField(max_length=64)
+    profile_photo = models.ImageField(blank=True, default="media/default.jpg", upload_to="media/images")
+    username = models.CharField(max_length=6,default="")
+    user_boardlist = models.ManyToManyField('Board', blank=True, related_name='user_boardlist')
+    user_likelist = models.ManyToManyField('Comment', blank=True, related_name='user_likelist')
+
 class Board(models.Model):
     idx = models.AutoField(primary_key=True)
     writer = models.CharField(null=False, max_length=50)
@@ -20,6 +31,7 @@ class Board(models.Model):
     ratings_up = models.IntegerField(default=0)
     ratings_down = models.IntegerField(default=0)
     rating = models.IntegerField(default=0)
+    win_score = models.IntegerField(default=0)
     image_thumbnail = ProcessedImageField(
             upload_to='media/thumbnail',
             processors=[Thumbnail(100, 100)],
@@ -35,14 +47,6 @@ class Board(models.Model):
     def rate_down(self):
         self.ratings_down += 1
 
-class Profile(models.Model):
-    user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,)
-    nickname = models.CharField(max_length=64)
-    profile_photo = models.ImageField(blank=True, default="media/default.jpg")
-    name = models.CharField(max_length=6,default="")
-    user_commentlist = models.ManyToManyField('Comment', blank=True, related_name='user_commentlist')
-    user_likelist = models.ManyToManyField('Comment', blank=True, related_name='user_likelist')
-
         
 class Comment(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
@@ -52,22 +56,47 @@ class Comment(models.Model):
     content = models.TextField(null=False)
     post_date = models.DateTimeField(default=datetime.now, blank=True)
     vote = models.IntegerField(null=False)
-    ratings_up = models.IntegerField(default=0)
-    ratings_down = models.IntegerField(default=0)
     rating = models.IntegerField(default=0)
     filename = models.CharField(null=True, blank=True, default="", max_length=500)
     filesize = models.IntegerField(default=0)
     down = models.IntegerField(default=0)
     evidence = models.BooleanField(default=False, null=False)
     image = models.ImageField(default="media/default.jpg", upload_to="media/images")
-    def rate_up(self):
-        self.ratings_up += 1
-    def rate_down(self):
-        self.ratings_down += 1
 
+
+class Finished_board(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    title = models.CharField(null=True, max_length=50, )
+    writer = models.CharField(null=True, max_length=50)
+    idx = models.IntegerField(null=False, primary_key=True)
+    content = models.TextField(null=True)
+    image_thumbnail = ProcessedImageField(
+        upload_to='media/thumbnail',
+        processors=[Thumbnail(100, 100)],
+        format='JPEG',
+        options={'quality': 60},
+        null=True)
+
+
+class Finished_comment(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    idx = models.IntegerField(null=False)
+    board_idx = models.IntegerField(null=False)
+    writer = models.CharField(null=False, max_length=50)
+    content = models.TextField(null=False)
+    post_date = models.DateTimeField(default=datetime.now, blank=True)
+    vote = models.IntegerField(null=False)
+    rating = models.IntegerField(default=0)
+    image = models.ImageField(default="media/default.jpg", upload_to="media/images")
 
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["username", "email", "password"]
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
 

@@ -28,6 +28,8 @@ urlpatterns = [
     path('reply_delete', views.reply_delete),
     path('reply_update_page', views.reply_update_page),
     path('evidence_insert', views.evidence_insert),
-    path('create_profile', views.create_profile),
+    path('profile_update', views.profile_update),
+    path('profile', views.profile),
+    path('finished_dic', views.finished_dic),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

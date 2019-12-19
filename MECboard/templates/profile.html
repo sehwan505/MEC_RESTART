@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>profile</title>
+    <script>
+        function home(){
+	    location.href="/";
+        }
+    </script>
+</head>
+<body>
+        <input type="button" value="목록" onclick="home()">
+        {% if profile.profile_photo %}
+        <img src="{{profile.profile_photo.url}}" width="200"> <br>
+        {% else %}
+        {% load staticfiles %}
+        <img src="{% static 'images/file.gif' %}" width="200"> <br>
+        {% endif %}
+        {% if profile.nickname %}
+        <h2>{{profile.nickname}}</h2>
+        {% endif %}
+        {% if profile.introduction %}
+        <h2>소개 : {{profile.introduction}}</h2>
+        {% endif %}
+        <table>
+        {% if profile.user_likelist.all %}
+        {% for row in likeList %}
+            {% if row.idx == profile.user_likelist.all %}
+            <tr>
+               <td>{{row.content}}</td>
+               <td>{{row.date}}</td>
+               <td>{{row.rating}}</td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% if user_commentList %}
+            <tr>
+                <th>내가 쓴 댓글</th>
+                <th>날짜</th>
+                <th>공감수</th>
+            </tr>
+            {% for row1 in user_commentList %}
+               <tr row="1">
+                <td>{{row1.content}}</td>
+                <td>{{row1.post_date}}</td>
+                <td>{{row1.rating}}</td>
+               </tr>
+        {% endfor %}
+
+        {% endif %}
+        </table>
+        {% if user == profile_user %}
+        <div style="position:absolute; bottom:0;"><a href="/profile_update">
+            <button type="button">프로필 편집</button></a></div>
+        {% endif %}
+</body>
+</html>

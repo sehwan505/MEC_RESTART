@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, render_to_response, get_object_or_404
-from MECboard.models import Board, Comment, Profile
+from MECboard.models import Board, Comment, Profile, Finished_board, Finished_comment
 import os
 import math
 from django.contrib.auth.decorators import login_required
@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.http import urlquote
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
-from MECboard.forms import UserForm, LoginForm
+from MECboard.forms import UserForm, LoginForm, ProfileForm
 from django.contrib.auth.models import User
 from django.contrib.auth import (authenticate, login as django_login, logout as django_logout, )
 import numpy as np
@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score
 
-UPLOAD_DIR = "C:/Users/John/Documents/GitHub/MEC_RESTART/MECboard/media/images"
+UPLOAD_DIR = "C:/Users/sehwa/PycharmProjects/MEC/MECboard/media/images"
 login_failure = False
 
 @csrf_exempt
@@ -167,6 +167,7 @@ def detail(request):
     username = request.GET["username"]
     is_authenticated = request.GET["is_authenticated"]
     is_superuser = request.user.is_superuser
+    profile = Profile.objects.get(user=request.user)
     dto = Board.objects.get(idx=id)
     dto.hit_up()
     dto.save()
@@ -183,7 +184,7 @@ def detail(request):
         
     return render_to_response("detail.html", 
         {"dto":dto, "filesize":filesize, "commentList":commentList, "username":username,
-          "is_authenticated":is_authenticated, "is_superuser":is_superuser, "search_option":search_option})
+          "is_authenticated":is_authenticated, "is_superuser":is_superuser, "search_option":search_option, "profile":profile})
 
 @csrf_exempt    
 def update_page(request):
@@ -253,11 +254,6 @@ def reply_insert(request):
                       content=request.POST["content"], vote=request.POST["vote"], filename=fname, filesize=fsize, evidence=request.POST["evidence"])
     dto.save()
 
-    post = get_object_or_404(Comment, idx=dto.idx)
-    user = request.user
-    profile = Profile.objects.get(user=user)
-    profile.user_commentlist.add(post)
-
     if vote == '1' or vote == '2':
         dto_board.rate_up()
     else:
@@ -275,21 +271,43 @@ def reply_rating(request):
     username = request.GET["username"]
     is_authenticated = request.GET["is_authenticated"]
     cdto = Comment.objects.get(idx=cid)
+    dto = Board.objects.get(idx=id)
 
     post = get_object_or_404(Comment, idx=cid)
     user = request.user
     profile = Profile.objects.get(user=user)
-
     check_like_post = profile.user_likelist.filter(idx=post.idx)
+
 
     if check_like_post.exists():
         profile.user_likelist.remove(post)
         cdto.rating -= 1
         cdto.save()
+
     else:
         profile.user_likelist.add(post)
         cdto.rating += 1
         cdto.save()
+        if (cdto.evidence == 1):
+            evidence = Comment.objects.get(evidence=1, idx=cid)
+            if evidence.rating == 1:
+                if evidence.vote == 1:
+                    dto.win_score += 2;
+                elif evidence.vote == 2:
+                    dto.win_score += 1
+                elif evidence.vote == 3:
+                    dto.win_score -= 1
+                elif evidence.vote == 4:
+                    dto.win_score -= 2
+            dto.save()
+
+    if dto.win_score > 0:
+        print("찬성 승리")
+        game_finish(request)
+    elif dto.win_score < 0:
+        print("반대 승리")
+        game_finish(request)
+
     #예전꺼
     # if rate == '1':
     #     cdto.rate_up()
@@ -377,9 +395,6 @@ def evidence_insert(request):
                                "is_authenticated": is_authenticated, "is_superuser": is_superuser,
                                "search_option": search_option, "profile":profile})
 
-def create_profile(request):
-    user = request.user
-    Profile.objects.create(user=user)
 
 def join(request):
     if request.method == "POST":
@@ -416,7 +431,6 @@ def login_check(request):
 
 def muchin_learning(request):
     vec = TfidfVectorizer(min_df=2, tokenizer=None, norm='l2')
-    conn = sqlite3.connect("db.sqlite3")
     df = pd.read_sql_query("select * from rating")
     rf = RandomForestClassifier(n_estimators=50)
 
@@ -436,5 +450,139 @@ def muchin_learning(request):
     x_test = vec.transform(x_test)
     rf.fit(x_train, y_train)
     pred = rf.predict(x_test)
+#
+# class SocialAccountAdapter(DefaultSocialAccountAdapter):
+#     def save_user(self, request, sociallogin, form=None):
+#
+#         user = super(SocialAccountAdapter, self).save_user(request, sociallogin, form)
+#
+#         social_app_name = sociallogin.account.provider.upper()
+#
+#         if social_app_name == "FACEBOOK":
+#             User.objects.get_or_create_facebook_user(user_pk=user.pk, extra_data=extra_data)
+#
+#         elif social_app_name == "KAKAO":
+#             User.objects.get_or_create_kakao_user(user_pk=user.pk, extra_data=extra_data)
+#
+#         elif social_app_name == "GOOGLE":
+#             User.objects.get_or_create_google_user(user_pk=user.pk, extra_data=extra_data)
+
+def profile(request):
+    profile = Profile.objects.get(user=request.user)
+    user_commentList = Comment.objects.filter(writer=request.user)
+    likeList=Comment.objects.all()
+    return render_to_response("profile.html", {"profile":profile, "user_commentList":user_commentList, "likeList":likeList})
+
+@csrf_exempt
+def profile_update(request):
+    profile = Profile.objects.get(user=request.user)
+    user_commentList = Comment.objects.filter(writer=request.user)
+    profile_form = ProfileForm(request.POST, request.FILES)
+    if profile_form.is_valid():
+
+        profile.nickname = profile_form.cleaned_data['nickname']
+        profile.introduction = profile_form.cleaned_data['introduction']
+        profile.profile_photo = profile_form.cleaned_data['profile_photo']
+        profile.save()
+        return redirect('/profile', {"profile":profile, "user_commentList":user_commentList})
+    else:
+        profile_form = ProfileForm(instance=profile)
+    return render(request, 'profile_update.html', {
+        'profile_form': profile_form
+    })
+
+def game_finish(request):
+    id = request.GET["idx"]
+    dto = Board.objects.get(idx=id)
+    cdto = Comment.objects.filter(board_idx=id)
+
+    finished_board = Finished_board(idx=dto.idx, title=dto.title ,writer= dto.writer ,content=dto.content, image_thumbnail=dto.image_thumbnail)
+    finished_board.save()
+
+    for c in cdto:
+        finished_comment = Finished_comment(idx=c.idx, board_idx=dto.idx, content=c.content, image=c.image,
+                                            post_date=c.post_date,
+                                            vote=c.vote, rating=c.rating, writer=c.writer)
+        finished_comment.save()
+
+    dto.delete()
+    cdto.delete()
+
+    finished_dic(request)
+
+def finished_dic(request):
+    try:
+        search_option = request.POST["search_option"]
+    except:
+        search_option = "writer"
+    try:
+        search = request.POST["search"]
+    except:
+        search = ""
+
+    if search_option == "all":
+        boardCount = Board.objects.filter(Q(writer__contains=search)
+                                          | Q(title__contains=search) | Q(content__contains=search)).count()
+    elif search_option == "writer":
+        boardCount = Board.objects.filter(Q(writer__contains=search)).count()
+    elif search_option == "title":
+        boardCount = Board.objects.filter(Q(title__contains=search)).count()
+    elif search_option == "content":
+        boardCount = Board.objects.filter(Q(content__contains=search)).count()
+
+    try:
+        start = int(request.GET["start"])
+    except:
+        start = 0
+    page_size = 10
+    page_list_size = 10
+    end = start + page_size
+    total_page = math.ceil(boardCount / page_size)
+    current_page = math.ceil((start + 1) / page_size)
+    start_page = math.floor((current_page - 1) / page_list_size) \
+                 * page_list_size + 1
+    end_page = start_page + page_list_size - 1
+
+    if total_page < end_page:
+        end_page = total_page
+    if start_page >= page_list_size:
+        prev_list = (start_page - 2) * page_size
+    else:
+        prev_list = 0
+    if total_page > end_page:
+        next_list = end_page * page_size
+    else:
+        next_list = 0
+
+    if search_option == "all":
+       finished_boardList = Finished_board.objects.filter(Q(writer__contains=search)
+                                         | Q(title__contains=search) | Q(content__contains=search)).order_by("-idx")[
+                    start:end]
+    elif search_option == "writer":
+        finished_boardList = Finished_board.objects.filter(Q(writer__contains=search)).order_by("-idx")[start:end]
+    elif search_option == "title":
+        finished_boardList = Finished_board.objects.filter(Q(title__contains=search)).order_by("-idx")[start:end]
+    elif search_option == "content":
+        finished_boardList = Finished_board.objects.filter(Q(content__contains=search)).order_by("-idx")[start:end]
+
+    links = []
+    for i in range(start_page, end_page + 1):
+        page = (i - 1) * page_size
+        links.append("<a href='?start=" + str(page) + "'>" + str(i) + "</a>")
+
+        username = request.user.username
+        is_authenticated = request.user.is_authenticated
+
+    return render_to_response("finished_dic.html",
+                              {"finished_boardList": finished_boardList, "boardCount": boardCount,
+                               "search_option": search_option, "search": search,
+                               "range": range(start_page - 1, end_page),
+                               "start_page": start_page, "end_page": end_page,
+                               "page_list_size": page_list_size, "total_page": total_page,
+                               "prev_list": prev_list, "next_list": next_list,
+                               "links": links, "username": username, "is_authenticated": is_authenticated})
+
+
+
 
 

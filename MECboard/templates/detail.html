@@ -129,6 +129,24 @@ function reply_insert(){
 			<input type="button" value="삭제" onclick="del()">
 		</td>
 	</tr>
+	<tr>
+		<td>
+			{% if dto.win_score %}
+			{% if dto.win_score > 0 %}
+				<p style="color:blue;">
+					찬성 우세
+				</p>
+			{% elif dto.win_score < 0 %}
+				<p style="color:red;">
+					반대 우세
+				</p>
+			{% else %}
+				중립
+			{% endif %}
+			{% endif %}
+
+		</td>
+	</tr>
 </table>
 </form>
 <form method="post" name="form2" action="reply_insert" id=form2 enctype="multipart/form-data">
@@ -180,7 +198,7 @@ function reply_insert(){
 			{% endif %}
 			{% if row.vote == 2 %}
 			<td>
-				<a href="#{{row.idx}}2"><img src="{{row.image.url}}" alt="사진없음", width="100", height="100"></a>
+				<a href="#{{row.idx}}f 2"><img src="{{row.image.url}}" alt="사진없음", width="100", height="100"></a>
 			</td>
 			{% endif %}
 			{% if row.vote == 3 %}
