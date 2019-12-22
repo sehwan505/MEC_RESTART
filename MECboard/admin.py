@@ -17,7 +17,6 @@ admin.site.register(Board, BoardAdmin)
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(Profile, ProfileAdmin)
 
-
 class ProfileInline(admin.StackedInline):
     model = Profile
     con_delete = False

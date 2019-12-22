@@ -6,7 +6,7 @@
 <title>Gesipan</title>
 <script>
 function write_identified(){
-	if ("{{is_authenticated}}" == "True")
+	if ("{{user.is_authenticated}}" == "True")
 		location.href="write";
 	else
 		alert("로그인이 필요합니다.");
@@ -21,6 +21,7 @@ a:hover {color: blue;}
 <body>
 
 <div style="width:1000px;height:30px;text-align:right;"><a href="/profile">프로필</a></div>
+<div style="width:1000px;height:30px;text-align:right;"><a href="/">진행중인 토론</a></div>
 <form method="post">
 {% csrf_token %}
 <select name="search_option">
@@ -64,10 +65,10 @@ a:hover {color: blue;}
 		<td><div style="text-align:center;">{{row.idx}}</div></td>
 		<td><div style="width:100px;text-align:center;">{{row.writer}}</div></td>
 		{% if row.image_thumbnail %}
-		<td><div style="text-align:center;">&nbsp;&nbsp;<a href="detail?idx={{row.idx}}&username={{username}}&is_authenticated={{is_authenticated}}">{{row.title}}
+		<td><div style="text-align:center;">&nbsp;&nbsp;<a href="detail?idx={{row.idx}}">{{row.title}}
 			<img src="{{row.image_thumbnail.url}}"></a></div></td>
 		{% else %}
-		<td><div style="width:240px;height:180px;text-align:center;"><a href="detail?idx={{row.idx}}&username={{username}}&is_authenticated={{is_authenticated}}">{{row.title}}</a></div></td>
+		<td><div style="width:240px;height:180px;text-align:center;"><a href="detail?idx={{row.idx}}">{{row.title}}</a></div></td>
 		{% endif %}
 
 	</tr>

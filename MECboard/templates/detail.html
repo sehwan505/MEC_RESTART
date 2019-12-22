@@ -2,15 +2,25 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Gesipan Details</title>
-<script>
+    <title>게시판</title>>
+    <script>
+function url_copy(val) {
+  var dummy = document.createElement("textarea");
+  document.body.appendChild(dummy);
+  dummy.value = val;
+  dummy.select();
+  document.execCommand("copy");
+  document.body.removeChild(dummy);
+
+  alert("클립보드에 복사되었습니다.");
+}
 
 function home(){
 	location.href="/";
 }
 function update_page(){
-	if ("{{is_authenticated}}" == "True"){
-		if ("{{username}}" == "{{dto.writer}}"){
+	if ("{{user.is_authenticated}}" == "True"){
+		if ("{{user.username}}" == "{{dto.writer}}"){
 		document.form1.action="update_page";
 		document.form1.submit();
 		}
@@ -22,8 +32,8 @@ function update_page(){
 
 }
 function del(){
-	if ("{{is_authenticated}}" == "True"){
-		if ("{{is_superuser}}" == "True" || "{{username}}" == "{{dto.writer}}"){
+	if ("{{user.is_authenticated}}" == "True"){
+		if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{dto.writer}}"){
 			if(confirm("삭제하시겠습니까?")){
 				document.form1.action="delete";
 				document.form1.submit();
@@ -37,15 +47,15 @@ function del(){
 
 }
 function reply_rating(cid, idx){
-	if ("{{is_authenticated}}" == "True"){
+	if ("{{user.is_authenticated}}" == "True"){
 		location.href="/reply_rating?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
     }
 	else
 		alert("로그인이 필요합니다");
 }
 function reply_update_page(cid, idx){
-	if ("{{is_authenticated}}" == "True"){
-		if ("{{username}}" == "{{dto.writer}}"){
+	if ("{{user.is_authenticated}}" == "True"){
+		if ("{{user.username}}" == "{{dto.writer}}"){
 			location.href="/reply_update_page?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
 		}
 		else
@@ -56,8 +66,8 @@ function reply_update_page(cid, idx){
 
 }
 function reply_delete(cid, idx){
-	if ("{{is_authenticated}}" == "True"){
-		if ("{{is_superuser}}" == "True" || "{{username}}" == "{{dto.writer}}"){
+	if ("{{user.is_authenticated}}" == "True"){
+		if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{dto.writer}}"){
 			if(confirm("삭제하시겠습니까?")){
 				location.href="/reply_delete?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
 				}
@@ -70,6 +80,10 @@ function reply_delete(cid, idx){
 
 }
 function reply_insert(){
+	if ("{{user.is_authenticated}}" != "True"){
+		alert("로그인이 필요합니다");
+		return;
+    }
 	if (document.form2.vote.value==""){
 		alert("찬반을 정하세요.");
 		document.form2.vote.focus();
@@ -80,7 +94,6 @@ function reply_insert(){
 		document.form2.content.focus();
 		return;
 	}
-
 	document.form2.submit();
 }
 
@@ -94,6 +107,9 @@ function reply_insert(){
             0% {width:0;}
             100% {width: 75%;}
         }
+
+
+
     </style>
 </head>
 <body>
@@ -164,9 +180,11 @@ function reply_insert(){
 <div class="graph">
     <span style="width:75%;">75%</span>
 </div>
+<button onclick="url_copy('localhost/detail?idx={{dto.idx}}')">이 주제 공유하기</button>
+
 <form method="post" name="form2" action="reply_insert" id=form2 enctype="multipart/form-data">
     {% csrf_token %}
-    {{username}}<input type="hidden" name="writer" value="{{username}}">
+    {{user.username}}<input type="hidden" name="writer" value="{{user.username}}">
     <input type="radio" name="vote" value="1"> 완전찬성행
     <input type="radio" name="vote" value="2"> 조금 찬성하는 중
     <input type="radio" name="vote" value="3"> 약간 반대하는 중
@@ -176,10 +194,8 @@ function reply_insert(){
     첨부사진 <input type="file" name="file" accept="image/*">
     <button type="button" onclick="reply_insert()" id="btnSave">댓글쓰기</button>
     <input type="button" name="evidence" value="증거 제출모드 전환"
-           onclick="location.href='evidence_insert?idx={{dto.idx}}&username={{username}}&is_authenticated={{is_authenticated}}'">
+           onclick="location.href='evidence_insert?idx={{dto.idx}}'">
     <input type="hidden" name="idx" value="{{dto.idx}}">
-    <input type="hidden" name="is_authenticated" value="{{is_authenticated}}">
-    <input type="hidden" name="username" value="{{username}}">
     <input type="hidden" name="evidence" value=False>
 </form>
 </table>

@@ -81,12 +81,14 @@ def list(request):
         page = (i - 1) * page_size
         links.append("<a href='?start=" + str(page) + "'>" + str(i) + "</a>")
 
-    if not request.user.is_authenticated:
-        username = request.user
-        is_authenticated = request.user.is_authenticated
-    else:
-        username = request.user.username
-        is_authenticated = request.user.is_authenticated
+    user = request.user
+
+    # if not request.user.is_authenticated:
+    #     username = request.user
+    #     is_authenticated = request.user.is_authenticated
+    # else:
+    #     username = request.user.username
+    #     is_authenticated = request.user.is_authenticated
 
     return render_to_response("list.html",
                               {"boardList": boardList, "boardCount": boardCount,
@@ -95,16 +97,14 @@ def list(request):
                                "start_page": start_page, "end_page": end_page,
                                "page_list_size": page_list_size, "total_page": total_page,
                                "prev_list": prev_list, "next_list": next_list,
-                               "links": links, "username": username, "is_authenticated": is_authenticated, })
+                               "links": links, "user" : user})
 
-
+@login_required
 def write(request):
-    username = request.user
-    is_authenticated = True
-    return render_to_response("write.html", {"username": username, "is_authenticated": is_authenticated})
-
+    return render_to_response("write.html", {"user": request.user})
 
 @csrf_exempt
+@login_required
 def insert(request):
     fname = ""
     fsize = 0
@@ -143,10 +143,7 @@ def insert(request):
         dto.save()
 
     id = str(dto.idx)
-
-    username = request.POST["username"]
-    is_authenticated = request.POST["is_authenticated"]
-    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id)
 
 
 def download(request):
@@ -168,10 +165,6 @@ def download(request):
 @csrf_exempt
 def detail(request):
     id = request.GET["idx"]
-    username = request.GET["username"]
-    is_authenticated = request.GET["is_authenticated"]
-    is_superuser = request.user.is_superuser
-    profile = Profile.objects.get(user=request.user)
     dto = Board.objects.get(idx=id)
     dto.hit_up()
     dto.save()
@@ -185,10 +178,15 @@ def detail(request):
     elif search_option == "rating":
         commentList = Comment.objects.filter(board_idx=id).order_by("-rating")
 
+    if(request.user.is_anonymous):
+        profile = Profile.objects.get(id=1)
+    else:
+        profile = Profile.objects.get(user=request.user)
+
+    user = request.user
     return render_to_response("detail.html",
-                              {"dto": dto, "filesize": filesize, "commentList": commentList, "username": username,
-                               "is_authenticated": is_authenticated, "is_superuser": is_superuser,
-                               "search_option": search_option, "profile": profile})
+                              {"dto": dto, "filesize": filesize, "commentList": commentList,
+                               "search_option": search_option, "profile": profile, "user": user})
 
 
 @csrf_exempt
@@ -197,17 +195,13 @@ def update_page(request):
     dto = Board.objects.get(idx=id)
     filesize = "%.2f" % (dto.filesize / 1024)
     username = request.user
-    is_authenticated = True
-    return render_to_response("update_page.html", {"username": username, "dto": dto, "filesize": filesize,
-                                                   "is_authenticated": is_authenticated})
+    return render_to_response("update_page.html", {"username": username, "dto": dto, "filesize": filesize})
 
 
 @csrf_exempt
 def update(request):
     id = request.POST["idx"]
     dto_src = Board.objects.get(idx=id)
-    username = request.POST["username"]
-    is_authenticated = request.POST["is_authenticated"]
     fname = dto_src.filename
     fsize = dto_src.filesize
     if "file" in request.FILES:
@@ -225,7 +219,7 @@ def update(request):
                     rating=request.POST["rating"], ratings_up=request.POST["ratings_up"],
                     ratings_down=request.POST["ratings_down"])
     dto_new.save()
-    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id)
 
 
 @csrf_exempt
@@ -238,8 +232,6 @@ def delete(request):
 @csrf_exempt
 def reply_insert(request):
     id = request.POST["idx"]
-    username = request.POST["username"]
-    is_authenticated = request.POST["is_authenticated"]
     vote = request.POST["vote"]
     dto_board = Board.objects.get(idx=id)
     fname = ""
@@ -272,7 +264,7 @@ def reply_insert(request):
     dto_board.rating = dto_board.ratings_up - dto_board.ratings_down
     dto_board.save()
 
-    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id)
 
 
 @csrf_exempt
@@ -280,8 +272,6 @@ def reply_insert(request):
 def reply_rating(request):
     cid = request.GET["cid"]
     id = request.GET["idx"]
-    username = request.GET["username"]
-    is_authenticated = request.GET["is_authenticated"]
     cdto = Comment.objects.get(idx=cid)
     dto = Board.objects.get(idx=id)
 
@@ -328,15 +318,13 @@ def reply_rating(request):
     # cdto.rating = cdto.ratings_up - cdto.ratings_down
     # cdto.save()
 
-    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id)
 
 
 @csrf_exempt
 def reply_update(request):
     cid = request.POST["cid"]
     id = request.POST["idx"]
-    username = request.POST["username"]
-    is_authenticated = request.POST["is_authenticated"]
     dto_src = Comment.objects.get(idx=cid)
     fname = dto_src.filename
     fsize = dto_src.filesize
@@ -353,15 +341,13 @@ def reply_update(request):
                       ratings_down=request.POST["ratings_down"],
                       filename=fname, filesize=fsize, vote=request.POST["vote"], )
     dto_new.save()
-    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id)
 
 
 @csrf_exempt
 def reply_delete(request):
     cid = request.GET["cid"]
     id = request.GET["idx"]
-    username = request.GET["username"]
-    is_authenticated = request.GET["is_authenticated"]
     dto = Board.objects.get(idx=id)
     cdto = Comment.objects.get(idx=cid)
     if cdto.vote == 1:
@@ -372,28 +358,22 @@ def reply_delete(request):
         dto.rating += 1
     dto.save()
     cdto.delete()
-    return HttpResponseRedirect("detail?idx=" + id + "&username=" + username + "&is_authenticated=" + is_authenticated)
+    return HttpResponseRedirect("detail?idx=" + id)
 
 
 @csrf_exempt
 def reply_update_page(request):
     id = request.GET['cid']
     dto = Comment.objects.get(idx=id)
-    username = request.GET["username"]
-    is_authenticated = request.GET["is_authenticated"]
     filesize = "%.2f" % (dto.filesize / 1024)
 
-    return render_to_response("reply_update_page.html", {"username": username, "dto": dto, "filesize": filesize,
-                                                         "is_authenticated": is_authenticated})
+    return render_to_response("reply_update_page.html", { "dto": dto, "filesize": filesize})
 
 
 @csrf_exempt
 def evidence_insert(request):
     id = request.GET["idx"]
-    username = request.GET["username"]
-    is_authenticated = request.GET["is_authenticated"]
-    is_superuser = request.user.is_superuser
-    profile = Profile.objects.get(user=request.user)
+    user = request.user
     dto = Board.objects.get(idx=id)
     dto.hit_up()
     dto.save()
@@ -409,9 +389,14 @@ def evidence_insert(request):
     elif search_option == "rating":
         commentList = Comment.objects.filter(board_idx=id).order_by("-rating")
 
+    if(request.user.is_anonymous):
+        profile = Profile.objects.get(id=1)
+    else:
+        profile = Profile.objects.get(user=request.user)
+
     return render_to_response("evidence_insert.html",
-                              {"dto": dto, "filesize": filesize, "commentList": commentList, "username": username,
-                               "is_authenticated": is_authenticated, "is_superuser": is_superuser,
+                              {"dto": dto, "filesize": filesize, "commentList": commentList,
+                               "user": user,
                                "search_option": search_option, "profile": profile})
 
 
@@ -578,13 +563,6 @@ def finished_dic(request):
         page = (i - 1) * page_size
         links.append("<a href='?start=" + str(page) + "'>" + str(i) + "</a>")
 
-    if not request.user.is_authenticated:
-        username = request.user
-        is_authenticated = request.user.is_authenticated
-    else:
-        username = request.user.username
-        is_authenticated = request.user.is_authenticated
-
     return render_to_response("finished_dic.html",
                               {"boardList": boardList, "boardCount": boardCount,
                                "search_option": search_option, "search": search,
@@ -592,5 +570,5 @@ def finished_dic(request):
                                "start_page": start_page, "end_page": end_page,
                                "page_list_size": page_list_size, "total_page": total_page,
                                "prev_list": prev_list, "next_list": next_list,
-                               "links": links, "username": username, "is_authenticated": is_authenticated, })
+                               "links": links })
 

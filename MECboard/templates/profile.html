@@ -24,14 +24,21 @@
         {% endif %}
         <table>
         {% if profile.user_likelist.all %}
+            <tr>
+                <th>내가 공감을 단 댓글</th>
+                <th>날짜</th>
+                <th>공감수</th>
+            </tr>
         {% for row in likeList %}
-            {% if row.idx == profile.user_likelist.all %}
+            {% for row1 in profile.user_likelist.all %}
+            {% if row.idx == row1.idx %}
             <tr>
                <td>{{row.content}}</td>
                <td>{{row.date}}</td>
                <td>{{row.rating}}</td>
             </tr>
             {% endif %}
+            {% endfor %}
         {% endfor %}
         {% endif %}
         {% if user_commentList %}
@@ -40,11 +47,11 @@
                 <th>날짜</th>
                 <th>공감수</th>
             </tr>
-            {% for row1 in user_commentList %}
+            {% for row2 in user_commentList %}
                <tr row="1">
-                <td>{{row1.content}}</td>
-                <td>{{row1.post_date}}</td>
-                <td>{{row1.rating}}</td>
+                <td>{{row2.content}}</td>
+                <td>{{row2.post_date}}</td>
+                <td>{{row2.rating}}</td>
                </tr>
         {% endfor %}
 

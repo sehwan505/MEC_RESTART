@@ -6,7 +6,7 @@
 <title>Gesipan</title>
 <script>
 function write_identified(){
-	if ("{{is_authenticated}}" == "True")
+	if ("{{user.is_authenticated}}" == "True")
 		location.href="write";
 	else
 		alert("로그인이 필요합니다.");
@@ -24,11 +24,11 @@ if ("{{login_failed}}" == "True")
 	alert("로그인에 실패하였습니다.");
 </script>
 <h2><a href="/">게시판</a></h2>
-{% if is_authenticated %}
-	안녕하십니까 {{username}}님<br>
+{% if user.is_authenticated %}
+	안녕하십니까 {{user.username}}님<br>
 	<a href="/accounts/logout">로그아웃</a>
 {% else %}
-	안녕하십니까 {{username}}님<br>
+	안녕하십니까 GUEST님<br>
 	<span style="color:red">로그인하십시오</span>
 	<a href="/login">로그인</a>
 	<!--<a href="/join">회원가입</a>-->
@@ -80,10 +80,10 @@ if ("{{login_failed}}" == "True")
 		<td><div style="text-align:center;">{{row.idx}}</div></td>
 		<td><div style="width:100px;text-align:center;">{{row.writer}}</div></td>
 		{% if row.image_thumbnail %}
-		<td><div style="text-align:center;">&nbsp;&nbsp;<a href="detail?idx={{row.idx}}&username={{username}}&is_authenticated={{is_authenticated}}">{{row.title}}
+		<td><div style="text-align:center;">&nbsp;&nbsp;<a href="detail?idx={{row.idx}}">{{row.title}}
 			<img src="{{row.image_thumbnail.url}}"></a></div></td>
 		{% else %}
-		<td><div style="width:240px;height:180px;text-align:center;"><a href="detail?idx={{row.idx}}&username={{username}}&is_authenticated={{is_authenticated}}">{{row.title}}</a></div></td>
+		<td><div style="width:240px;height:180px;text-align:center;"><a href="detail?idx={{row.idx}}">{{row.title}}</a></div></td>
 		{% endif %}
 		<td>{{row.hit}}</td>
 		<td>{{row.rating}}</td>
