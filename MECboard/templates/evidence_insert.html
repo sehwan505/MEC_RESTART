@@ -95,6 +95,7 @@ function reply_insert(){
 </head>
 <body>
 <h2>게시물 내용</h2>
+<div align="center">
 <form method="post" name="form1" enctype="multipart/form-data">
     <table border="1" width="700px">
         <tr>
@@ -142,20 +143,18 @@ function reply_insert(){
 </form>
 <form method="post" name="form2" action="reply_insert" id=form2 enctype="multipart/form-data">
     {% csrf_token %}
-    {{username}}<input type="hidden" name="writer" value="{{username}}">
+    {{user.username}}<input type="hidden" name="writer" value="{{user.username}}">
     <input type="radio" name="vote" value="1"> 완전찬성행
     <input type="radio" name="vote" value="2"> 조금 찬성하는 중
     <input type="radio" name="vote" value="3"> 약간 반대하는 중
     <input type="radio" name="vote" value="4"> 진짜 반대해 <br>
-    <textarea rows="5" cols="80" name="content"
+    <textarea rows="20" cols="95" name="content"
               placeholder="증거를 작성하세요." style="border:3px solid midnightblue;"></textarea><br>
     첨부사진 <input type="file" name="file" accept="image/*">
     <button type="button" onclick="reply_insert()" id="btnSave">증거 제출하기</button>
     <input type="button" name="evidence" value="댓글 모드 전환"
-           onclick="location.href='detail?idx={{dto.idx}}&username={{username}}&is_authenticated={{is_authenticated}}'">
+           onclick="location.href='detail?idx={{dto.idx}}'">
     <input type="hidden" name="idx" value="{{dto.idx}}">
-    <input type="hidden" name="is_authenticated" value="{{is_authenticated}}">
-    <input type="hidden" name="username" value="{{username}}">
     <input type="hidden" name="evidence" value=True>
 </form>
 
@@ -263,5 +262,6 @@ function reply_insert(){
         {% endfor %}
 </table>
 </form>
+</div>
 </body>
 </html>

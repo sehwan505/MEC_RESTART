@@ -33,7 +33,7 @@ function update_page(){
 }
 function del(){
 	if ("{{user.is_authenticated}}" == "True"){
-		if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{dto.writer}}"){
+		if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{commentList.writer}}"){
 			if(confirm("삭제하시겠습니까?")){
 				document.form1.action="delete";
 				document.form1.submit();
@@ -48,15 +48,15 @@ function del(){
 }
 function reply_rating(cid, idx){
 	if ("{{user.is_authenticated}}" == "True"){
-		location.href="/reply_rating?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
+		location.href="/reply_rating?idx="+String(idx)+"&cid="+String(cid);
     }
 	else
 		alert("로그인이 필요합니다");
 }
 function reply_update_page(cid, idx){
 	if ("{{user.is_authenticated}}" == "True"){
-		if ("{{user.username}}" == "{{dto.writer}}"){
-			location.href="/reply_update_page?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
+		if ("{{user.username}}" == "{{commentList.writer}}"){
+			location.href="/reply_update_page?idx="+String(idx)+"&cid="+String(cid);
 		}
 		else
 			alert("글쓴이가 아닙니다");
@@ -67,9 +67,9 @@ function reply_update_page(cid, idx){
 }
 function reply_delete(cid, idx){
 	if ("{{user.is_authenticated}}" == "True"){
-		if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{dto.writer}}"){
+	    if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{commentList.writer | commentList.idx == cid}}"){
 			if(confirm("삭제하시겠습니까?")){
-				location.href="/reply_delete?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
+				location.href="/reply_delete?idx="+String(idx)+"&cid="+String(cid);
 				}
 		}
 		else
@@ -114,6 +114,7 @@ function reply_insert(){
 </head>
 <body>
 <h2>게시물 내용</h2>
+<div align="center">
 <form method="post" name="form1" enctype="multipart/form-data">
     <table border="1" width="700px">
         <tr>
@@ -181,7 +182,7 @@ function reply_insert(){
     <span style="width:75%;">75%</span>
 </div>
 <button onclick="url_copy('localhost/detail?idx={{dto.idx}}')">이 주제 공유하기</button>
-
+{% if dto.is_finished == False %}
 <form method="post" name="form2" action="reply_insert" id=form2 enctype="multipart/form-data">
     {% csrf_token %}
     {{user.username}}<input type="hidden" name="writer" value="{{user.username}}">
@@ -198,7 +199,7 @@ function reply_insert(){
     <input type="hidden" name="idx" value="{{dto.idx}}">
     <input type="hidden" name="evidence" value=False>
 </form>
-</table>
+{% endif %}
 <br>
 {% csrf_token %}
 <table border="1" width="700px">
@@ -310,8 +311,8 @@ function reply_insert(){
                 {% else %}
                 {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
                 {% endif %}
-                <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}})">
-                <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}})"><br>
+                <button type="button" onclick="reply_update_page({{row.idx}}, {{dto.idx}})">수정</button>
+                <button type="button" onclick="reply_delete({{row.idx}}, {{dto.idx}})">삭제</button><br>
                 {{row.content}}<br>
                 {% if row.filename %}
                 <img src="{{row.image.url}}" alt="그림없음" , width="100" , height="100">
@@ -322,5 +323,6 @@ function reply_insert(){
         {% endfor %}
 </table>
 </form>
+</div>
 </body>
 </html>
