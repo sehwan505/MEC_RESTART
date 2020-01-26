@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>게시판</title>>
     <script>
+{% load post_extras %}
 function url_copy(val) {
   var dummy = document.createElement("textarea");
   document.body.appendChild(dummy);
@@ -67,7 +68,7 @@ function reply_update_page(cid, idx){
 }
 function reply_delete(cid, idx){
 	if ("{{user.is_authenticated}}" == "True"){
-	    if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{commentList.writer | commentList.idx == cid}}"){
+	    if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{commentList | find_writer:1}}"){
 			if(confirm("삭제하시겠습니까?")){
 				location.href="/reply_delete?idx="+String(idx)+"&cid="+String(cid);
 				}

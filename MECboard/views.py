@@ -284,6 +284,18 @@ def reply_rating(request):
         profile.user_likelist.remove(post)
         cdto.rating -= 1
         cdto.save()
+        if (cdto.evidence == True):
+            evidence = Comment.objects.get(evidence=True, idx=cid)
+            if evidence.rating == 1:
+                if evidence.vote == 1:
+                    dto.win_score -= 2;
+                elif evidence.vote == 2:
+                    dto.win_score -= 1
+                elif evidence.vote == 3:
+                    dto.win_score += 1
+                elif evidence.vote == 4:
+                    dto.win_score += 2
+            dto.save()
 
     else:
         profile.user_likelist.add(post)
@@ -302,11 +314,11 @@ def reply_rating(request):
                     dto.win_score -= 2
             dto.save()
 
-    if dto.win_score > 0:
+    if dto.win_score > 3:
         print("찬성 승리")
         dto.is_finished = True
         dto.save()
-    elif dto.win_score < 0:
+    elif dto.win_score < -3:
         print("반대 승리")
         dto.is_finished = True
         dto.save()
@@ -490,7 +502,6 @@ def profile_update(request):
     user_commentList = Comment.objects.filter(writer=request.user)
     profile_form = ProfileForm(request.POST, request.FILES)
     if profile_form.is_valid():
-
         profile.nickname = profile_form.cleaned_data['nickname']
         profile.introduction = profile_form.cleaned_data['introduction']
         profile.profile_photo = profile_form.cleaned_data['profile_photo']
