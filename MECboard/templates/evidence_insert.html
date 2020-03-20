@@ -42,9 +42,9 @@ function reply_rating(cid, idx){
 	else
 		alert("로그인이 필요합니다");
 }
-function reply_update_page(cid, idx){
+function reply_update_page(cid, idx, writer_id){
 	if ("{{user.is_authenticated}}" == "True"){
-		if ("{{user.username}}" == "{{dto.writer}}"){
+		if ("{{user.id}}" == writer_id){
 			location.href="/reply_update_page?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
 		}
 		else
@@ -54,9 +54,9 @@ function reply_update_page(cid, idx){
 		alert("로그인이 필요합니다");
 
 }
-function reply_delete(cid, idx){
+function reply_delete(cid, idx, writer_id){
 	if ("{{user.is_authenticated}}" == "True"){
-		if ("{{user.is_superuser}}" == "True" || "{{user.username}}" == "{{dto.writer}}"){
+		if ("{{user.is_superuser}}" == "True" || "{{user.id}}" == writer_id){
 			if(confirm("삭제하시겠습니까?")){
 				location.href="/reply_delete?idx="+String(idx)+"&cid="+String(cid)+"&username="+"{{username}}"+"&is_authenticated="+"{{is_authenticated}}";
 				}
@@ -94,8 +94,9 @@ function reply_insert(){
     </script>
 </head>
 <body>
+{% load staticfiles %}
+<a href="/"><img src="{% static 'images/backsign.png' %}" width="50" height="50"></a><br>
 <h2>게시물 내용</h2>
-<div align="center">
 <form method="post" name="form1" enctype="multipart/form-data">
     <table border="1" width="700px">
         <tr>
@@ -144,6 +145,7 @@ function reply_insert(){
 <form method="post" name="form2" action="reply_insert" id=form2 enctype="multipart/form-data">
     {% csrf_token %}
     {{user.username}}<input type="hidden" name="writer" value="{{user.username}}">
+    <input type="hidden", name="writer_id" value="{{user.id}}">
     <input type="radio" name="vote" value="1"> 완전찬성행
     <input type="radio" name="vote" value="2"> 조금 찬성하는 중
     <input type="radio" name="vote" value="3"> 약간 반대하는 중
@@ -202,8 +204,8 @@ function reply_insert(){
                 {% else %}
                 {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
                 {% endif %}
-                <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}})">
-                <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}})"><br>
+                <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}}, {{row.writer_id}})">
+                <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}}),  {{row.writer_id}}"><br>
                 {{row.content}}<br>
                 {% if row.filename %}
                 <img src="{{row.image.url}}" alt="그림없음" , width="100" , height="100">
@@ -218,8 +220,8 @@ function reply_insert(){
                 {% else %}
                 {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
                 {% endif %}
-                <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}})">
-                <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}})"><br>
+                <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}},  {{row.writer_id}})">
+                <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}},  {{row.writer_id}})"><br>
                 {{row.content}}<br>
                 {% if row.filename %}
                 <img src="{{row.image.url}}" alt="그림없음" , width="100" , height="100">
@@ -230,9 +232,9 @@ function reply_insert(){
         <tr align="right">
             <td>( <span style="color:blue">약간 반대하는 중</span> ) {{row.writer}} ( {{row.post_date}} ) <br>
                 {% if row in profile.user_likelist.all %}
-                {{row.rating}}<input type="button" value="취소" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
+                {{row.rating}}<input type="button" value="취소" onclick="reply_rating({{row.idx}}, {{dto.idx}},  {{row.writer_id}})">
                 {% else %}
-                {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
+                {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}},  {{row.writer_id}})">
                 {% endif %}
                 <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}})">
                 <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}})"><br>
@@ -246,9 +248,9 @@ function reply_insert(){
         <tr align="right">
             <td> ( {{row.post_date}} ) {{row.writer}} ( <span style="color:red">반대</span> )<br>
                 {% if row in profile.user_likelist.all %}
-                {{row.rating}}<input type="button" value="취소" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
+                {{row.rating}}<input type="button" value="취소" onclick="reply_rating({{row.idx}}, {{dto.idx}},  {{row.writer_id}})">
                 {% else %}
-                {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}})">
+                {{row.rating}}<input type="button" value="공감" onclick="reply_rating({{row.idx}}, {{dto.idx}},  {{row.writer_id}})">
                 {% endif %}
                 <input type="button" value="수정" onclick="reply_update_page({{row.idx}}, {{dto.idx}})">
                 <input type="button" value="삭제" onclick="reply_delete({{row.idx}}, {{dto.idx}})"><br>
@@ -262,6 +264,5 @@ function reply_insert(){
         {% endfor %}
 </table>
 </form>
-</div>
 </body>
 </html>

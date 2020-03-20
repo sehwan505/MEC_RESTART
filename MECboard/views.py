@@ -248,11 +248,11 @@ def reply_insert(request):
                 fp.write(chunk)
 
         fsize = os.path.getsize(UPLOAD_DIR + fname)
-        dto = Comment(board_idx=id, writer=request.POST["writer"],
+        dto = Comment(board_idx=id, writer=request.POST["writer"], writer_id=request.POST["writer_id"],
                       content=request.POST["content"], vote=request.POST["vote"], filename=fname, filesize=fsize,
                       image=request.FILES["file"], evidence=request.POST["evidence"])
     else:
-        dto = Comment(board_idx=id, writer=request.POST["writer"],
+        dto = Comment(board_idx=id, writer=request.POST["writer"],writer_id=request.POST["writer_id"],
                       content=request.POST["content"], vote=request.POST["vote"], filename=fname, filesize=fsize,
                       evidence=request.POST["evidence"])
     dto.save()
@@ -348,7 +348,7 @@ def reply_update(request):
             fp.write(chunk)
         fp.close()
         fsize = os.path.getsize(UPLOAD_DIR + fname)
-    dto_new = Comment(idx=cid, board_idx=id, writer=request.POST["writer"], content=request.POST["content"],
+    dto_new = Comment(idx=cid, board_idx=id, writer=request.POST["writer"], content=request.POST["content"], writer_Id=request.POST["writer_id"],
                       rating=request.POST["rating"], ratings_up=request.POST["ratings_up"],
                       ratings_down=request.POST["ratings_down"],
                       filename=fname, filesize=fsize, vote=request.POST["vote"], )
@@ -490,8 +490,15 @@ def muchin_learning(request):
 
 def profile(request):
     profile = Profile.objects.get(user=request.user)
-    user_commentList = Comment.objects.filter(writer=request.user)
+    user_commentList = Comment.objects.filter(writer = request.user)
     likeList = Comment.objects.all()
+
+
+    posts =  Comment.objects.filter(writer=request.user.username)
+    for post in posts:
+        profile = Profile.objects.get(user=request.user)
+        profile.user_commentlist.add(post)
+
     return render_to_response("profile.html",
                               {"profile": profile, "user_commentList": user_commentList, "likeList": likeList})
 

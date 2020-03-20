@@ -15,7 +15,7 @@ class Profile(models.Model):
     nickname = models.CharField(max_length=64)
     profile_photo = models.ImageField(blank=True, default="media/default.jpg", upload_to="media/images")
     username = models.CharField(max_length=6,default="")
-    user_boardlist = models.ManyToManyField('Board', blank=True, related_name='user_boardlist')
+    user_commentlist = models.ManyToManyField('Comment', blank=True, related_name='user_commentlist')
     user_likelist = models.ManyToManyField('Comment', blank=True, related_name='user_likelist')
 
 class Board(models.Model):
@@ -54,6 +54,7 @@ class Comment(models.Model):
     idx = models.AutoField(primary_key=True)
     board_idx = models.IntegerField(null=False)
     writer = models.CharField(null=False, max_length=50)
+    writer_id = models.IntegerField(null=True)
     content = models.TextField(null=False)
     post_date = models.DateTimeField(default=datetime.now, blank=True)
     vote = models.IntegerField(null=False)
